@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css?family=Sarpanch:900');
+
+body {
+    margin: 0px;
+    background: black;
+}
+
+.header {
+    background: black;
+    color:white;
+    font-family: arial;
+    font-size:24px;
+    font-stretch:100%;
+    font-weight:700;
+    outline-color:rgb(255, 255, 255);
+    text-rendering:optimizelegibility;
+    text-size-adjust:100%;
+    text-transform:none;
+    height: 34px;
+    width:100%;
+}
+
+.header span.logo {
+    margin-top: 8px;
+    margin-left: 5px;
+    float: left;
+    font-size: 29px;
+}
+
+.header span.header_right {
+    float: right;
+    margin-right: 0.5%;
+    margin-top: 8px;
+}
+
+.header span.logo_icon {
+    margin-left: 5px;
+    vertical-align: middle;
+    float: left;
+    height: 100%;
+    margin-top: 10px;
+}
+
+
+#main_data {
+    min-height:300px;
+    overflow: hidden;
+    float: left;
+    background: white;
+    width: 99%;
+    margin-left: 0.5%;
+    margin-bottom: 0.5%;
+}
+
+#main_data span.nodata {
+    grid-area: text;
+    font-family: 'Sarpanch', sans-serif;
+    font-size: 13vmin;
+    margin: 0;
+    padding: 30px;
+    color: #1d9099;
+    text-shadow: 1vmin 1vmin 0 #E79C10, -1vmin -1vmin 0 #D53A33;
+    display:table;
+    margin:0 auto;
+}
+
+#main_data div {
+    display: block;
+    overflow: hidden;
+    width: 750px;
+}
+
+#main_data div span.column {
+    margin-right: 10px;
+    margin-left: 2px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.floatleft {
+    float: left;
+}
+
+.column_title {
+    width: 300px;
+    overflow: hidden;
+}
+
+#main_data div:nth-child(even) {
+    background: #ccc;
+}
+
+.column_count {
+    width: 170px;
+}
+.column_button {
+    display: table-cell;
+    vertical-align: middle
+}
+
+.column_button button {
+    float: right;
+    margin-right: 5px;
+}
+
+#settings_open:hover {
+    cursor: pointer;
+}
+
+.table_settings_table {
+    width: 742px;
+}
