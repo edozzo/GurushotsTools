@@ -1,76 +1,121 @@
-var callMeBack = null;
-if (!('indexedDB' in window)) {
-    window.indexedDB = window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-}
-
 var localGuruDb = {};
-localGuruDb.openDatabase = function() {
+localGuruDb.initSettings = false;
+localGuruDb.openDatabase = function(p_callbackFunction) {
+    if(localGuruDb.db)
+        return;
+
     console.log('open db');
-    var req = indexedDB.open("guruDB", 1);
+    var req = indexedDB.open("guruDB", 5);
 
     console.log(req);
     req.onsuccess = function(e) {
         localGuruDb.db = e.target.result;
-        console.log('opened');
-        console.log(localGuruDb.db);
 
-        if (callMeBack != null) {
-            callMeBack();
+        if(localGuruDb.initSettings) {
+            localGuruDb.initSettings = false;
+
+            let initSettings = {keyCode: 'timer_default_sec', value: 1200, label: 'Timer Default (sec)' }
+            localGuruDb.putData(localGuruDb.TABLE.SETTINGS, initSettings);
         }
+
+        if(typeof p_callbackFunction == "function")
+            p_callbackFunction();
     };
 
     req.onupgradeneeded = function(e) {
         localGuruDb.db = e.target.result;
 
-        localGuruDb.initDb();
+        localGuruDb.initDb(e.target.transaction);
 
 
     };
 }
 
-localGuruDb.initDb = function () {
+localGuruDb.initDb = function (p_transaction) {
+    let challenges = null;
+    let alarms = null;
     if (!localGuruDb.db.objectStoreNames.contains("challenges")) {
-        let challenges = localGuruDb.db.createObjectStore("challenges", {keyPath: ['close_time','id']} );
+        challenges = localGuruDb.db.createObjectStore("challenges", {keyPath: ['close_time','id']} );
         let index = challenges.createIndex('timestamp_idx', 'close_time');
     }
 
-}
+    if (!localGuruDb.db.objectStoreNames.contains("alarms")) {
+        alarms = localGuruDb.db.createObjectStore("alarms", {keyPath: ['close_time','id','timer_count']} );
 
-localGuruDb.addOrUpdateChallenges = function (p_id, p_title, p_close_time, p_alarm) {
-    if(!localGuruDb.db) {
-        callMeBack = localGuruDb.addOrUpdateChallenges.bind(this, p_id, p_title, p_close_time);
-        localGuruDb.openDatabase();
-        return;
-    } else {
-        if(callMeBack == this ) callMeBack = null;
     }
 
-    let challenge = { id: p_id, title: p_title, close_time: p_close_time, alarm: p_alarm  };
+    let storeAlarms = p_transaction.objectStore(localGuruDb.TABLE.ALARM);
 
-    let transaction = localGuruDb.db.transaction('challenges', 'readwrite');
-    let challenges = transaction.objectStore('challenges');
+    if(!storeAlarms.indexNames.contains("alarms_idx")) {
+        let alarms_index = storeAlarms.createIndex('alarms_idx', ['close_time','id']);
+    }
 
-    let responseOperation = challenges.put(challenge);
+    if (!localGuruDb.db.objectStoreNames.contains("settings")) {
+        let settings = localGuruDb.db.createObjectStore("settings", {keyPath: 'keyCode'} );
+        localGuruDb.initSettings = true;
 
+
+    }
+}
+
+localGuruDb.deleteData = function (p_table, p_keys, p_callbackFuction) {
+    let transaction = localGuruDb.db.transaction(p_table, 'readwrite');
+    let storeObj = transaction.objectStore(p_table);
+    let responseOperation = storeObj.delete(p_keys);
     responseOperation.onerror = function() {
         console.error("Error", responseOperation.error);
     };
+    responseOperation.onsuccess = function() {
+        transaction.complete;
 
-    transaction.complete;
+        if(typeof p_callbackFuction == "function") {
+            p_callbackFuction();
+        }
+    }
+}
 
+localGuruDb.putData = function(p_table, p_record) {
 
+    let transaction = localGuruDb.db.transaction(p_table, 'readwrite');
+    let storeObj = transaction.objectStore(p_table);
+    let responseOperation = storeObj.put(p_record);
+    responseOperation.onerror = function() {
+        console.error("Error", responseOperation.error);
+    };
+    responseOperation.onsuccess = function() {
+        transaction.complete;
+    }
+}
+
+localGuruDb.readData = function(p_table, p_index, p_keys, p_callbackFunction, p_single) {
+    console.log('readData');
+
+    let transaction = localGuruDb.db.transaction(p_table, 'readonly');
+    let storeObj = transaction.objectStore(p_table);
+    let indexObj = (p_index)?storeObj.index(p_index):null;
+    let operation = null;
+
+    if(p_single) {
+        console.log('single');
+        operation = (indexObj)?indexObj.get(p_keys):storeObj.get(p_keys);
+    } else {
+        // here that we are getting multiple data p_keys is not only an array that contains primary key but could be a key condition ex. IDBKeyRange
+        console.log('multiple')
+        operation = (p_index)?indexObj.getAll(p_keys) :storeObj.getAll(p_keys );
+    }
+    operation.onerror = function() {
+        p_callbackFunction(null);
+    }
+
+    operation.onsuccess = function(event) {
+        console.log('success');
+        console.log(event.target.result);
+        console.log(p_single);
+        if(typeof p_callbackFunction == "function") p_callbackFunction((p_single)?operation.result:event.target.result,p_keys);
+    }
 }
 
 localGuruDb.getCurrentChallenges = function (callbackFunction) {
-
-    if(!localGuruDb.db) {
-        callMeBack = localGuruDb.getCurrentChallenges.bind(this, callbackFunction);
-        localGuruDb.openDatabase();
-        return;
-    } else {
-        if(callMeBack == this ) callMeBack = null;
-    }
-
     let transaction = localGuruDb.db.transaction('challenges', 'readonly');
     let challenges = transaction.objectStore('challenges');
     let timestampIndex = challenges.index("timestamp_idx");
@@ -87,13 +132,6 @@ localGuruDb.getCurrentChallenges = function (callbackFunction) {
 }
 
 localGuruDb.getChallenge = function (p_unixstamp, p_id, callbackFunction) {
-    if(!localGuruDb.db) {
-        callMeBack = localGuruDb.getChallenge.bind(this, p_unixstamp, p_id, callbackFunction);
-        localGuruDb.openDatabase();
-        return;
-    } else {
-        if(callMeBack == this ) callMeBack = null;
-    }
 
     let transaction = localGuruDb.db.transaction('challenges', 'readonly');
     let challenges = transaction.objectStore('challenges');
@@ -112,13 +150,6 @@ localGuruDb.getChallenge = function (p_unixstamp, p_id, callbackFunction) {
 }
 
 localGuruDb.setAlarmStatus = function (p_unixstamp, p_id, p_status) {
-    if(!localGuruDb.db) {
-        callMeBack = localGuruDb.setAlarmStatus.bind(this, p_unixstamp, p_id, p_status);
-        localGuruDb.openDatabase();
-        return;
-    } else {
-        if(callMeBack == this ) callMeBack = null;
-    }
 
     let transaction = localGuruDb.db.transaction('challenges', 'readwrite');
     let challenges = transaction.objectStore('challenges');
@@ -140,3 +171,7 @@ localGuruDb.setAlarmStatus = function (p_unixstamp, p_id, p_status) {
     };
 
 }
+
+localGuruDb.TABLE = { CHALLENGE: 'challenges', ALARM: 'alarms', SETTINGS: 'settings' }
+localGuruDb.INDEX = { CHALLENGE: { TIMESTAMP: 'timestamp_idx'}, ALARM: { CLOSE_TIME_ID: 'alarms_idx'}}
+

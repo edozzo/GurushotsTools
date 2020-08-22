@@ -1,10 +1,11 @@
-localGuruDb.openDatabase();
 chrome.alarms.create({delayInMinutes: 3.0})
 
 chrome.alarms.onAlarm.addListener(function (alarm) {
 
 
 });
+
+localGuruDb.openDatabase();
 
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
@@ -18,9 +19,7 @@ chrome.runtime.onMessage.addListener(
             challenges = data.challenges;
 
             challenges.forEach(function (ele) {
-                console.log(ele);
-
-                localGuruDb.addOrUpdateChallenges(ele.id, ele.title, ele.close_time, true);
+                localGuruDb.putData(localGuruDb.TABLE.CHALLENGE, {id: ele.id, title: ele.title, close_time: ele.close_time, alarm: true })
 
             });
 
