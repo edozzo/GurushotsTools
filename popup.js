@@ -199,7 +199,8 @@ var guruToolsApp = {
                 let alarmIdx = i + 1;
                 let alarmNextLabel = 'alarm ' + alarmIdx;
                 let alarmNextId = 'alarm_' + alarmIdx;
-                let alarm_obj = guruToolsApp.generateTr(alarmNextLabel,alarmNextId, p_alarmsData[i]['timer_sec'],p_alarmsData[i]['alarm_data']);
+
+                let alarm_obj = guruToolsApp.generateTr(alarmNextLabel,alarmNextId, p_alarmsData[i]['timer_sec'],['alarm_data']);
                 tableObj.append(alarm_obj);
             }
         }
@@ -220,9 +221,10 @@ var guruToolsApp = {
                 let elements = tableObj.getElementsByClassName('alarm_data');
                 for (var i = 0; i < elements.length; i++) {
 
-                    if(elements[i].tagName == 'INPUT' ) {
-                        let record = { close_time: p_keys[0], id: p_keys[1], timer_count: i,timer_sec: elements[i].value };
-                        localGuruDb.putData(localGuruDb.TABLE.ALARM, record)
+                    if(elements[i].tagName.toUpperCase() == 'INPUT' ) {
+                        console.log('update');
+                        let record = { close_time: p_keys[0], id: p_keys[1], timer_count: i,timer_sec: elements[i].value, done: false };
+                        localGuruDb.putData(localGuruDb.TABLE.ALARM, record);
                     }
                 }
             });

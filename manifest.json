@@ -2,7 +2,7 @@
   "name": "Gurushots Tool",
   "version": "0.1",
   "description": "My personal Gurushots tools",
-  "permissions": ["storage","alarms","tabs","https://gurushots.com/rest/*"],
+  "permissions": ["storage","alarms","notifications","tabs","https://gurushots.com/rest/*"],
   "content_scripts": [
         {
             "matches": ["https://gurushots.com/*"],

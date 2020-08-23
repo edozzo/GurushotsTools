@@ -7,7 +7,6 @@ localGuruDb.openDatabase = function(p_callbackFunction) {
     console.log('open db');
     var req = indexedDB.open("guruDB", 5);
 
-    console.log(req);
     req.onsuccess = function(e) {
         localGuruDb.db = e.target.result;
 
@@ -88,7 +87,6 @@ localGuruDb.putData = function(p_table, p_record) {
 }
 
 localGuruDb.readData = function(p_table, p_index, p_keys, p_callbackFunction, p_single) {
-    console.log('readData');
 
     let transaction = localGuruDb.db.transaction(p_table, 'readonly');
     let storeObj = transaction.objectStore(p_table);
@@ -96,11 +94,9 @@ localGuruDb.readData = function(p_table, p_index, p_keys, p_callbackFunction, p_
     let operation = null;
 
     if(p_single) {
-        console.log('single');
         operation = (indexObj)?indexObj.get(p_keys):storeObj.get(p_keys);
     } else {
         // here that we are getting multiple data p_keys is not only an array that contains primary key but could be a key condition ex. IDBKeyRange
-        console.log('multiple')
         operation = (p_index)?indexObj.getAll(p_keys) :storeObj.getAll(p_keys );
     }
     operation.onerror = function() {
@@ -108,9 +104,6 @@ localGuruDb.readData = function(p_table, p_index, p_keys, p_callbackFunction, p_
     }
 
     operation.onsuccess = function(event) {
-        console.log('success');
-        console.log(event.target.result);
-        console.log(p_single);
         if(typeof p_callbackFunction == "function") p_callbackFunction((p_single)?operation.result:event.target.result,p_keys);
     }
 }
@@ -122,7 +115,6 @@ localGuruDb.getCurrentChallenges = function (callbackFunction) {
 
     if ('getAll' in challenges) {
         timestampIndex.getAll(IDBKeyRange.lowerBound(Math.floor(Date.now() / 1000), true)).onsuccess = function(event) {
-            console.log(callbackFunction);
             if(typeof callbackFunction == "function") {
                 callbackFunction(event.target.result);
             }
@@ -138,12 +130,10 @@ localGuruDb.getChallenge = function (p_unixstamp, p_id, callbackFunction) {
 
     let operation = challenges.get([p_unixstamp, p_id]);
     operation.onerror = function() {
-        console.log("button 30");
         callbackFunction(null);
     }
 
     operation.onsuccess = function(event) {
-        console.log(operation.result);
 
         if(callbackFunction) callbackFunction(operation.result);
     }
