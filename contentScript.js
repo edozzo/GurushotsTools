@@ -47,9 +47,14 @@ setInterval(function(){
             let target_url = element.getAttribute('req_url');
             console.log(element);
             if (target_url.includes("get_member_joined_active_challenges")) {
-                chrome.runtime.sendMessage({url: target_url, data_body: element.innerHTML}, function (response) {
-                    console.log(response);
-                });
+
+                try {
+                    chrome.runtime.sendMessage({type:'traffic', url: target_url, data_body: element.innerHTML}, function (response) {
+                        console.log(response);
+                    });
+                } catch (e) {
+
+                }
             }
             element.remove();
         }

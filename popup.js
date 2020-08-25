@@ -164,7 +164,7 @@ var guruToolsApp = {
 
             localGuruDb.setAlarmStatus(p_challange['close_time'],p_challange['id'], true);
         }
-
+        chrome.runtime.sendMessage({type:'reloadTimer'});
     },
     changeAlarmStatus: function changeAlarmStatus(p_unixstamp, p_id) {
         localGuruDb.readData(localGuruDb.TABLE.CHALLENGE, null, [p_unixstamp, p_id], guruToolsApp.callbackChangeAlarm, true);
@@ -192,27 +192,31 @@ var guruToolsApp = {
         tableObj.classList.add("table_settings_table");
 
         if(p_alarmsData.length == 0) {
-            let alarm1 = guruToolsApp.generateTr('alarm 1','alarm_1', 1200,['alarm_data']);
+            let alarm1 = guruToolsApp.generateTr('alarm 1','alarm_1', 1200,['alarm_data'], false);
             tableObj.append(alarm1);
         } else {
             for (var i = 0; i < p_alarmsData.length; i++) {
                 let alarmIdx = i + 1;
                 let alarmNextLabel = 'alarm ' + alarmIdx;
                 let alarmNextId = 'alarm_' + alarmIdx;
-
-                let alarm_obj = guruToolsApp.generateTr(alarmNextLabel,alarmNextId, p_alarmsData[i]['timer_sec'],['alarm_data']);
+                let classList = ['alarm_data','input_readonly'];
+                let alarm_obj = guruToolsApp.generateTr(alarmNextLabel,alarmNextId, p_alarmsData[i]['timer_sec'],classList, true);
                 tableObj.append(alarm_obj);
             }
         }
 
         guruToolsApp.mainDataObj.append(tableObj);
 
+        let backButton = guruToolsApp.generateButton('back',['back_button' , 'dialog_buttons'],function() {
+            localGuruDb.readData(localGuruDb.TABLE.CHALLENGE, localGuruDb.INDEX.CHALLENGE.TIMESTAMP, IDBKeyRange.lowerBound(Math.floor(Date.now() / 1000)), guruToolsApp.render, false);
+        });
+
         let addButton = guruToolsApp.generateButton('Add new row',['Add_row' , 'dialog_buttons'],function() {
             let elements = tableObj.getElementsByTagName('tr');
             let nextiIdNumber = elements.length + 1;
             let alarmNextLabel = 'alarm ' + nextiIdNumber;
             let alarmNextId = 'alarm_' + nextiIdNumber;
-            let alarm_obj = guruToolsApp.generateTr(alarmNextLabel,alarmNextId, 1200,['alarm_data']);
+            let alarm_obj = guruToolsApp.generateTr(alarmNextLabel,alarmNextId, 1200,['alarm_data'], true);
             tableObj.append(alarm_obj);
         });
 
@@ -222,26 +226,33 @@ var guruToolsApp = {
                 for (var i = 0; i < elements.length; i++) {
 
                     if(elements[i].tagName.toUpperCase() == 'INPUT' ) {
-                        console.log('update');
-                        let record = { close_time: p_keys[0], id: p_keys[1], timer_count: i,timer_sec: elements[i].value, done: false };
+                        let record = "";
+                        if (elements[i].readOnly) {
+                            record = { close_time: p_keys[0], id: p_keys[1], timer_count: i,timer_sec: elements[i].value, done: true };
+                        }
+                        record = { close_time: p_keys[0], id: p_keys[1], timer_count: i,timer_sec: elements[i].value, done: false };
                         localGuruDb.putData(localGuruDb.TABLE.ALARM, record);
                     }
                 }
+                chrome.runtime.sendMessage({type:'reloadTimer'});
+                localGuruDb.readData(localGuruDb.TABLE.CHALLENGE, localGuruDb.INDEX.CHALLENGE.TIMESTAMP, IDBKeyRange.lowerBound(Math.floor(Date.now() / 1000)), guruToolsApp.render, false);
             });
 
         });
         guruToolsApp.mainDataObj.append(saveButton);
         guruToolsApp.mainDataObj.append(addButton);
+        guruToolsApp.mainDataObj.append(backButton);
 
 
     },
-    generateTr: function(p_label, p_id, p_value,p_inputClassList) {
+    generateTr: function(p_label, p_id, p_value,p_inputClassList,p_remove) {
         let tr1 = document.createElement('tr');
         let td1 = document.createElement('td');
         let td_label = document.createElement('label');
         td_label.innerText = p_label;
-
+        td1.classList.add("td_label");
         let td2 = document.createElement('td');
+        td2.classList.add("td_input");
         let time_input = document.createElement('input');
         time_input.id = p_id;
         time_input.value = p_value;
@@ -249,16 +260,58 @@ var guruToolsApp = {
             for (var i = 0; i < p_inputClassList.length; i++) {
 
                 time_input.classList.add(p_inputClassList[i]);
+
+                if(p_inputClassList[i] == "input_readonly") {
+                    time_input.readOnly = true;
+                }
             }
         }
 
         time_input.setAttribute('label', p_label);
 
         td2.append(time_input);
-        td1.append(td_label);
 
+        td1.append(td_label);
         tr1.append(td1);
+
         tr1.append(td2);
+        let td3 = document.createElement('td');
+        if(p_remove) {
+
+            if(!time_input.readOnly) {
+                let spanButton = document.createElement('span');
+                spanButton.innerHTML = "<i class=\"far fa-trash-alt\"></i>";
+                spanButton.onclick = function (e) {
+                    console.log(e.srcElement.parentElement.parentElement.parentElement);
+                    let element = e.srcElement;
+                    let elementToBeDeleted = null;
+                    let table = null;
+                    do {
+                        if(element.tagName.toUpperCase() == "TR") {
+                            elementToBeDeleted = element;
+
+                        }
+
+                        if(element.tagName.toUpperCase() == "TABLE") {
+                            elementToBeDeleted.remove();
+                            table = element;
+                            break;
+                        }
+                        element = element.parentElement;
+                    } while (1==1);
+
+                    let inputArr = table.getElementsByTagName('INPUT');
+                    for (var i = 0; i < inputArr.length; i++) {
+                        console.log(inputArr[i]);
+                    }
+
+                }
+
+                td3.append(spanButton);
+            }
+
+        }
+        tr1.append(td3);
 
         return tr1;
     },

@@ -5,6 +5,10 @@ body {
     background: black;
 }
 
+input:read-only, textarea:read-only {
+    background-color: #ccc;
+}
+
 .header {
     background: black;
     color:white;
@@ -116,4 +120,12 @@ body {
     float: right;
     vertical-align: bottom;
     margin-right: 1%;
+}
+
+.td_input {
+    width:180px;
+}
+
+.td_label {
+    width:200px;
 }

@@ -104,6 +104,8 @@ localGuruDb.readData = function(p_table, p_index, p_keys, p_callbackFunction, p_
     }
 
     operation.onsuccess = function(event) {
+        console.log(operation.result);
+        console.log(event.target.result);
         if(typeof p_callbackFunction == "function") p_callbackFunction((p_single)?operation.result:event.target.result,p_keys);
     }
 }
